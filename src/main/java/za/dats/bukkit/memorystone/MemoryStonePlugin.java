@@ -1,10 +1,12 @@
 package za.dats.bukkit.memorystone;
 
+import java.io.IOException;
+
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import za.dats.bukkit.memorystone.economy.EconomyManager;
-import za.dats.bukkit.memorystone.ui.SpoutLocationPopupManager;
+//import za.dats.bukkit.memorystone.ui.SpoutLocationPopupManager;
 import za.dats.bukkit.memorystone.util.StructureManager;
 
 public class MemoryStonePlugin extends JavaPlugin {
@@ -13,7 +15,7 @@ public class MemoryStonePlugin extends JavaPlugin {
     private StructureManager structureManager = new StructureManager(this, "[MemoryStone] ");
     private MemoryStoneManager memoryStoneManager = new MemoryStoneManager(this);
     private CompassManager compassManager = new CompassManager(this);
-    private SpoutLocationPopupManager spoutLocationPopupManager;
+    //private SpoutLocationPopupManager spoutLocationPopupManager;
     private EconomyManager economyManager = new EconomyManager();
     private static MemoryStonePlugin instance;
 
@@ -31,7 +33,12 @@ public class MemoryStonePlugin extends JavaPlugin {
     
     public void onEnable() {
 	instance = this;
-	Config.init(this);
+	try {
+		Config.init(this);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 	
 	pm = getServer().getPluginManager();
 	pdf = getDescription();
@@ -47,8 +54,8 @@ public class MemoryStonePlugin extends JavaPlugin {
 	compassManager.registerEvents();
 	
 	if (isSpoutEnabled()) {
-	    spoutLocationPopupManager = new SpoutLocationPopupManager(this);
-	    spoutLocationPopupManager.registerEvents();
+	    //spoutLocationPopupManager = new SpoutLocationPopupManager(this);
+	    //spoutLocationPopupManager.registerEvents();
 	}
     }
 
@@ -71,9 +78,9 @@ public class MemoryStonePlugin extends JavaPlugin {
 	return compassManager;
     }
 
-    public SpoutLocationPopupManager getSpoutLocationPopupManager() {
-        return spoutLocationPopupManager;
-    }
+//    public SpoutLocationPopupManager getSpoutLocationPopupManager() {
+//        return spoutLocationPopupManager;
+//    }
     
     public static MemoryStonePlugin getInstance() {
 	return instance;

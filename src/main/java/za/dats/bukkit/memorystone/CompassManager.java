@@ -1,6 +1,7 @@
 package za.dats.bukkit.memorystone;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -10,32 +11,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+//import org.bukkit.event.Event.Priority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerListener;
+//import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.util.config.Configuration;
-import org.getspout.spoutapi.event.input.InputListener;
-import org.getspout.spoutapi.event.input.KeyReleasedEvent;
-import org.getspout.spoutapi.gui.ScreenType;
-import org.getspout.spoutapi.keyboard.Keyboard;
+//import org.bukkit.util.config.Configuration;
+//import org.getspout.spoutapi.event.input.InputListener;
+//import org.getspout.spoutapi.event.input.KeyReleasedEvent;
+//import org.getspout.spoutapi.gui.ScreenType;
+//import org.getspout.spoutapi.keyboard.Keyboard;
 import za.dats.bukkit.memorystone.Config.MemoryEffect;
 import za.dats.bukkit.memorystone.economy.EconomyManager;
 import za.dats.bukkit.memorystone.ui.LocationPopupListener;
 
-public class CompassManager extends PlayerListener {
+//public class CompassManager extends PlayerListener {
+	public class CompassManager implements Listener {
     private static class Teleport {
 	boolean started;
 	boolean cancelled;
@@ -47,6 +54,8 @@ public class CompassManager extends PlayerListener {
     }
 
     final MemoryStonePlugin plugin;
+    private static final Logger log = Logger.getLogger("Minecraft");
+
     private final Map<String, Set<MemoryStone>> memorized;
     private final Map<String, String> selected;
     private final Map<String, Teleport> teleporting;
@@ -112,6 +121,7 @@ public class CompassManager extends PlayerListener {
 
 	String playerName = player.getName();
 	boolean hasPermission = player.hasPermission("memorystone.allmemorized");
+	//log.info(playerName + " allmem " + hasPermission);
 	if (hasPermission) {
 	    Collection<? extends MemoryStone> localStones = plugin.getMemoryStoneManager().getLocalStones(world);
 	    for (MemoryStone memoryStone : localStones) {
@@ -164,7 +174,7 @@ public class CompassManager extends PlayerListener {
 	}
     }
 
-    public void forgetStone(String name, boolean showMessage) {
+    public void forgetStone(String name, boolean showMessage) throws IOException {
 	MemoryStone stone = plugin.getMemoryStoneManager().getNamedMemoryStone(name);
 	for (String player : selected.keySet()) {
 	    if (name.equals(selected.get(player))) {
@@ -189,48 +199,51 @@ public class CompassManager extends PlayerListener {
     public void registerEvents() {
 	PluginManager pm;
 	pm = plugin.getServer().getPluginManager();
-	pm.registerEvent(Event.Type.PLAYER_INTERACT, this, Priority.Normal, plugin);
-	pm.registerEvent(Event.Type.PLAYER_INTERACT_ENTITY, this, Priority.Normal, plugin);
-	pm.registerEvent(Event.Type.PLAYER_MOVE, this, Priority.Normal, plugin);
+	
+	//pm.registerEvent(Event.Type.PLAYER_INTERACT, this, Priority.Normal, plugin);
+	//pm.registerEvent(Event.Type.PLAYER_INTERACT_ENTITY, this, Priority.Normal, plugin);
+	//pm.registerEvent(Event.Type.PLAYER_MOVE, this, Priority.Normal, plugin);
 
+	pm.registerEvents(this, plugin);
+	
 	if (plugin.isSpoutEnabled() && Config.getTeleportKey().length() > 0) {
-	    final Keyboard teleportKey = Keyboard.valueOf("KEY_" + Config.getTeleportKey());
-	    InputListener inputListener = new InputListener() {
-		@Override
-		public void onKeyReleasedEvent(KeyReleasedEvent event) {
-		    if (Config.getTeleportItem() == null) {
-			return;
-		    }
-
-		    if (event.getKey().equals(teleportKey) && event.getScreenType().equals(ScreenType.GAME_SCREEN)) {
-			Player p = event.getPlayer();
-
-			int index = p.getInventory().first(Config.getTeleportItem());
-			if (index == -1) {
-			    p.sendMessage(Config.getColorLang("teleportitemnotfound", "material", Config
-				    .getTeleportItem().toString().toLowerCase()));
-			    return;
-			}
-
-			ItemStack[] contents = p.getInventory().getContents();
-			ItemStack item = contents[index];
-			fireTeleportWithItem(item, Config.getMaxUsesPerItem(), index, null, p);
-		    }
-		}
-	    };
-	    pm.registerEvent(Event.Type.CUSTOM_EVENT, inputListener, Event.Priority.Normal, plugin);
+//	    final Keyboard teleportKey = Keyboard.valueOf("KEY_" + Config.getTeleportKey());
+//	    InputListener inputListener = new InputListener() {
+//		@Override
+//		public void onKeyReleasedEvent(KeyReleasedEvent event) {
+//		    if (Config.getTeleportItem() == null) {
+//			return;
+//		    }
+//
+//		    if (event.getKey().equals(teleportKey) && event.getScreenType().equals(ScreenType.GAME_SCREEN)) {
+//			Player p = event.getPlayer();
+//
+//			int index = p.getInventory().first(Config.getTeleportItem());
+//			if (index == -1) {
+//			    p.sendMessage(Config.getColorLang("teleportitemnotfound", "material", Config
+//				    .getTeleportItem().toString().toLowerCase()));
+//			    return;
+//			}
+//
+//			ItemStack[] contents = p.getInventory().getContents();
+//			ItemStack item = contents[index];
+//			fireTeleportWithItem(item, Config.getMaxUsesPerItem(), index, null, p);
+//		    }
+//		}
+//	    };
+//	    pm.registerEvent(Event.Type.CUSTOM_EVENT, inputListener, Event.Priority.Normal, plugin);
 
 	}
 	loadLocations();
     }
 
-    public boolean memorizeStone(PlayerInteractEvent event) {
+    public boolean memorizeStone(PlayerInteractEvent event) throws IOException {
 	Sign state = (Sign) event.getClickedBlock().getState();
 	MemoryStone stone = plugin.getMemoryStoneManager().getMemoryStructureForSign(state);
 	return memorizeStone(event.getPlayer(), stone);
     }
     
-    public boolean memorizeStone(Player player, MemoryStone stone) {
+    public boolean memorizeStone(Player player, MemoryStone stone) throws IOException {
     	
     	if (player!=null && stone != null && stone.getSign() != null) {
     	    if (stone.isGlobal()) {
@@ -295,33 +308,63 @@ public class CompassManager extends PlayerListener {
 	if (!file.exists()) {
 	    return;
 	}
-	Configuration conf = new Configuration(file);
-	conf.load();
+	//Configuration conf = new Configuration(file);
+	//conf.load();
 
-	Map<String, Set<String>> memLoad = (Map<String, Set<String>>) conf.getProperty("memorized");
-	for (String player : memLoad.keySet()) {
-	    Set<String> stones = memLoad.get(player);
+	YamlConfiguration conf = YamlConfiguration.loadConfiguration(file);
+	
+	//Map<String, Set<String>> memLoad = (Map<String, Set<String>>) conf.getProperty("memorized");
+	
+	//log.info("P" + conf.getKeys(true).size());
+	
+	ConfigurationSection memLoad = conf.getConfigurationSection("memorized");
+	for (String player : memLoad.getKeys(true)) {
+	    Set<String> stones = (Set<String>) memLoad.get(player);
 	    Set<MemoryStone> stoneList = new TreeSet<MemoryStone>();
 	    for (String stoneName : stones) {
+		//log.info(player + ":" + stoneName);
 		MemoryStone stone = plugin.getMemoryStoneManager().getNamedMemoryStone(stoneName);
 		if (stone != null) {
+		    //log.info("Add Stone" + stone.getName());
 		    stoneList.add(stone);
 		}
 	    }
 	    memorized.put(player, stoneList);
 	}
+	
+	
+//	Map<String, Set<String>> memLoad = (Map<String, Set<String>>) conf.get("memorized");
+//	for (String player : memLoad.keySet()) {
+//	    Set<String> stones = memLoad.get(player);
+//	    Set<MemoryStone> stoneList = new TreeSet<MemoryStone>();
+//	    for (String stoneName : stones) {
+//		MemoryStone stone = plugin.getMemoryStoneManager().getNamedMemoryStone(stoneName);
+//		if (stone != null) {
+//		    stoneList.add(stone);
+//		}
+//	    }
+//	    memorized.put(player, stoneList);
+//	}
 
-	Map<String, String> selLoad = (Map<String, String>) conf.getProperty("selected");
-	for (String player : selLoad.keySet()) {
-	    selected.put(player, selLoad.get(player));
+	ConfigurationSection selLoad = conf.getConfigurationSection("selected");
+	for (String player : selLoad.getKeys(true)) {
+	    //log.info(player + "Selected = " + selLoad.getString(player));
+	    selected.put(player, selLoad.getString(player));
 	}
+
+	//Map<String, String> selLoad = (Map<String, String>) conf.getProperty("selected");
+//	Map<String, String> selLoad = (Map<String, String>) conf.get("selected");
+//	for (String player : selLoad.keySet()) {
+//	    selected.put(player, selLoad.get(player));
+//	}
 
     }
 
-    public void saveLocations() {
+    public void saveLocations() throws IOException {
 	File file = new File(this.plugin.getDataFolder(), this.locationsFile);
-	Configuration conf = new Configuration(file);
+	//Configuration conf = new Configuration(file);
 
+	YamlConfiguration conf = YamlConfiguration.loadConfiguration(file);
 	Map<String, Set<String>> memorizedNames = new HashMap<String, Set<String>>();
 	for (String playerName : memorized.keySet()) {
 	    Set<MemoryStone> stoneList = memorized.get(playerName);
@@ -333,9 +376,14 @@ public class CompassManager extends PlayerListener {
 
 	    memorizedNames.put(playerName, stoneNameList);
 	}
-	conf.setProperty("memorized", memorizedNames);
-	conf.setProperty("selected", selected);
-	conf.save();
+	//conf.setProperty("memorized", memorizedNames);
+	//conf.setProperty("selected", selected);
+	conf.set("memorized", memorizedNames);
+	conf.set("selected", selected);
+	
+	//conf.save();
+	conf.save(file);
+	
     }
 
     public Teleport getTeleport(Player player) {
@@ -520,8 +568,8 @@ public class CompassManager extends PlayerListener {
 	}
     }
 
-    @Override
-    public void onPlayerInteractEntity(final PlayerInteractEntityEvent event) {
+    @EventHandler
+    public void onPlayerInteractEntity(final PlayerInteractEntityEvent event) throws IOException {
 	if (Config.getTeleportItem() == null) {
 	    // Cannot teleport another without a teleport item set.
 	    return;
@@ -559,19 +607,19 @@ public class CompassManager extends PlayerListener {
 	}
 
 	if (plugin.isSpoutEnabled()) {
-	    if (((org.getspout.spoutapi.player.SpoutPlayer) event.getPlayer()).isSpoutCraftEnabled()) {
-		String name = ((HumanEntity) event.getRightClicked()).getName();
-		plugin.getSpoutLocationPopupManager().showPopup(event.getPlayer(),
-			getPlayerLocations(event.getPlayer().getWorld().getName(), event.getPlayer()),
-			Config.getColorLang("selectotherlocation", "name", name), new LocationPopupListener() {
-			    public void selected(MemoryStone stone) {
-				tryTeleportOther(event, event.getPlayer(), stone.getName());
-			    }
-			});
-	    } else {
-		String name = selected.get(event.getPlayer().getName());
-		tryTeleportOther(event, event.getPlayer(), name);
-	    }
+//	    if (((org.getspout.spoutapi.player.SpoutPlayer) event.getPlayer()).isSpoutCraftEnabled()) {
+//		String name = ((HumanEntity) event.getRightClicked()).getName();
+//		plugin.getSpoutLocationPopupManager().showPopup(event.getPlayer(),
+//			getPlayerLocations(event.getPlayer().getWorld().getName(), event.getPlayer()),
+//			Config.getColorLang("selectotherlocation", "name", name), new LocationPopupListener() {
+//			    public void selected(MemoryStone stone) {
+//				tryTeleportOther(event, event.getPlayer(), stone.getName());
+//			    }
+//			});
+//	    } else {
+//		String name = selected.get(event.getPlayer().getName());
+//		tryTeleportOther(event, event.getPlayer(), name);
+//	    }
 	} else {
 	    String name = selected.get(event.getPlayer().getName());
 	    tryTeleportOther(event, event.getPlayer(), name);
@@ -593,7 +641,7 @@ public class CompassManager extends PlayerListener {
 	return false;
     }
 
-    private void tryTeleportOther(final PlayerInteractEntityEvent event, final Player p, String name) {
+    private void tryTeleportOther(final PlayerInteractEntityEvent event, final Player p, String name) throws IOException {
 	if (name != null) {
 	    MemoryStone stone = plugin.getMemoryStoneManager().getNamedMemoryStone(name);
 	    if (stone == null) {
@@ -614,7 +662,7 @@ public class CompassManager extends PlayerListener {
 	}
     }
 
-    public void fireTeleportFromBlock(Block clickedBlock, Player player) {
+    public void fireTeleportFromBlock(Block clickedBlock, Player player) throws IOException {
 	MemoryStone clickedStone = null;
 	if (Config.isStoneToStoneEnabled() && player.hasPermission("memorystone.usestonetostone")
 		&& (clickedBlock != null) && (clickedBlock.getState() instanceof Sign)) {
@@ -651,7 +699,7 @@ public class CompassManager extends PlayerListener {
     }
 
     public void fireTeleportWithItem(final ItemStack item, final int maxUses, final int itemIndex,
-	    final MemoryStone ignoreStone, final Player player) {
+	    final MemoryStone ignoreStone, final Player player) throws IOException {
 	if (!(player.hasPermission("memorystone.useanywhere") || Config.getMinProximityToStoneForTeleport() == 0)) {
 	    if (!withinDistanceOfAnyStone(player, Config.getMinProximityToStoneForTeleport())) {
 		player.sendMessage(Config.getColorLang("outsideproximity"));
@@ -671,12 +719,12 @@ public class CompassManager extends PlayerListener {
 		    return;
 		}
 
-		plugin.getSpoutLocationPopupManager().showPopup(player, playerLocations,
-			Config.getColorLang("selectlocation"), new LocationPopupListener() {
-			    public void selected(MemoryStone stone) {
-				tryTeleport(player, item, maxUses, itemIndex, stone.getName());
-			    }
-			});
+//		plugin.getSpoutLocationPopupManager().showPopup(player, playerLocations,
+//			Config.getColorLang("selectlocation"), new LocationPopupListener() {
+//			    public void selected(MemoryStone stone) {
+//				tryTeleport(player, item, maxUses, itemIndex, stone.getName());
+//			    }
+//			});
 	    } else {
 		String name = selected.get(player.getName());
 		tryTeleport(player, item, maxUses, itemIndex, name);
@@ -687,8 +735,8 @@ public class CompassManager extends PlayerListener {
 	}
     }
 
-    @Override
-    public void onPlayerInteract(final PlayerInteractEvent event) {
+    @EventHandler
+    public void onPlayerInteract(final PlayerInteractEvent event) throws IOException {
 	Player player = event.getPlayer();
 
 	// check permissions!
@@ -740,7 +788,7 @@ public class CompassManager extends PlayerListener {
 
 	}
 
-	super.onPlayerInteract(event);
+	//super.onPlayerInteract(event);
     }
 
     private void cycleTeleport(final PlayerInteractEvent event, Player player, Teleport teleport) {
@@ -843,7 +891,7 @@ public class CompassManager extends PlayerListener {
 	return false;
     }
 
-    private void tryTeleport(Player p, ItemStack item, int maxUses, int itemIndex, String name) {
+    private void tryTeleport(Player p, ItemStack item, int maxUses, int itemIndex, String name) throws IOException {
 	if (name != null) {
 	    MemoryStone stone = plugin.getMemoryStoneManager().getNamedMemoryStone(name);
 	    if (stone == null) {
@@ -860,8 +908,8 @@ public class CompassManager extends PlayerListener {
 	}
     }
 
-    @Override
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) throws IOException {
 	Teleport teleport = getTeleport(event.getPlayer());
 	if (teleport.started) {
 	    if ((event.getFrom().getBlockX() != event.getTo().getBlockX())

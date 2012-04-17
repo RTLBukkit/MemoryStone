@@ -1,6 +1,7 @@
 package za.dats.bukkit.memorystone.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,18 +14,30 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.ConfigurationOptions;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.MemoryConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
-import org.bukkit.util.config.ConfigurationNode;
+import org.bukkit.util.Vector;
 
+//import org.bukkit.util.config.Configuration;
+//import org.bukkit.util.config.ConfigurationNode;
+
+import za.dats.bukkit.memorystone.Config;
 import za.dats.bukkit.memorystone.util.structure.BlockOffset;
 import za.dats.bukkit.memorystone.util.structure.Rotator;
 import za.dats.bukkit.memorystone.util.structure.Structure;
 import za.dats.bukkit.memorystone.util.structure.StructureType;
+import za.dats.bukkit.memorystone.BkOldConfigurationNode;
 
 /**
  * 
@@ -165,33 +178,67 @@ public class StructureManager {
 		structureTypesFile.createNewFile();
 		this.saveDefaultStructureTypes();
 	    } catch (Exception ex) {
-		log.warning(logPrefix+"could not create file " + structureTypesFile.getName());
+		log.warning(logPrefix + "could not create file " + structureTypesFile.getName());
 	    }
 	}
 
 	this.loadStructureTypes();
     }
 
+    public List<ConfigurationSection> getNodeListAA(ConfigurationSection section, String path, List<ConfigurationSection> def) {
+	List<Object> raw = (List<Object>) section.getList(path);
+
+	if (raw == null) {
+	    return def != null ? def : new ArrayList<ConfigurationSection>();
+	}
+
+	List<ConfigurationSection> list = new ArrayList<ConfigurationSection>();
+
+	for (Object o : raw) {
+	    if (o instanceof Map) {
+		// list.add(new ConfigurationSection((Map<String, Object>) o));
+		//log.info("@@" + o.toString());
+		list.add(section.createSection(path, (Map<String, Object>) o));
+	    }
+	}
+
+	return list;
+    }
+
     private void loadStructureTypes() {
 
 	File structureTypesFile = new File(this.plugin.getDataFolder(), this.structureTypes_filename);
-	Configuration conf = new Configuration(structureTypesFile);
-	conf.load();
+	// Configuration conf = new Configuration(structureTypesFile);
+	// conf.load();
 
-	List<ConfigurationNode> nodelist = conf.getNodeList("structuretypes", new ArrayList<ConfigurationNode>());
+	YamlConfiguration conf = YamlConfiguration.loadConfiguration(structureTypesFile);
 
-	for (ConfigurationNode node : nodelist) {
+	//List<ConfigurationSection> nodelist = getNodeList(conf, "structuretypes", new ArrayList<ConfigurationSection>());
+	
+	// List<ConfigurationNode> nodelist = conf.getNodeList("structuretypes", new ArrayList<ConfigurationNode>());
+	BkOldConfigurationNode OldNode = new BkOldConfigurationNode((Map<String, Object>) conf.getValues(true) );
+	
+	List<BkOldConfigurationNode> nodelist = OldNode.getNodeList("structuretypes", new ArrayList<BkOldConfigurationNode>());
+
+	//log.info("##" + nodelist.size());
+
+	
+	// for (ConfigurationNode node : nodelist) {
+	// for (String nodeKey : nodelist.getKeys(true)) {
+	for (BkOldConfigurationNode node : nodelist) {
+	    // ConfigurationSection node =
+	    // nodelist.getConfigurationSection(nodeKey);
 	    StructureType structureType = this.yaml2StructureType(node);
 	    if (structureType == null) {
-		log.warning(logPrefix+"a structure type couldn't be loaded");
+		log.warning(logPrefix + "a structure type couldn't be loaded");
 	    } else {
 		this.structureTypes.add(structureType);
 	    }
 	}
 
 	/*
-	 * Sort the StructureTypes by structure size. This way, larger totems will be found before smaller totems (and
-	 * possibly subtotems).
+	 * Sort the StructureTypes by structure size. This way, larger totems
+	 * will be found before smaller totems (and possibly subtotems).
 	 */
 	Collections.sort(this.structureTypes, new Comparator<StructureType>() {
 	    public int compare(StructureType o1, StructureType o2) {
@@ -200,13 +247,15 @@ public class StructureManager {
 	});
 	Collections.reverse(this.structureTypes);
 
-	log.info(logPrefix+"loaded " + this.structureTypes.size() + " structure types");
+	log.info(logPrefix + "loaded " + this.structureTypes.size() + " structure types");
     }
 
-    private void saveDefaultStructureTypes() {
+    private void saveDefaultStructureTypes() throws IOException {
 
 	File structureTypesFile = new File(this.plugin.getDataFolder(), this.structureTypes_filename);
-	Configuration conf = new Configuration(structureTypesFile);
+	// Configuration conf = new Configuration(structureTypesFile);
+
+	YamlConfiguration conf = YamlConfiguration.loadConfiguration(structureTypesFile);
 
 	List<StructureType> types = new ArrayList<StructureType>();
 	for (StructureListener listener : listeners) {
@@ -218,8 +267,11 @@ public class StructureManager {
 	    yamllist.add(structureType2yaml(structureType));
 	}
 
-	conf.setProperty("structuretypes", yamllist);
-	conf.save();
+	// conf.setProperty("structuretypes", yamllist);
+	conf.set("structuretypes", yamllist);
+	// conf.save();
+	conf.save(structureTypesFile);
+
     }
 
     private Map<String, Object> structureType2yaml(StructureType structuretype) {
@@ -245,59 +297,77 @@ public class StructureManager {
 	return yamllist;
     }
 
-    private StructureType yaml2StructureType(ConfigurationNode node) {
+    // private StructureType yaml2StructureType(ConfigurationNode node) {
+    private StructureType yaml2StructureType(BkOldConfigurationNode node) {
 	StructureType.Prototype prototype = new StructureType.Prototype();
 	String name = node.getString("name", null);
 	if (name == null) {
-	    log.warning(logPrefix+"Structure type's name is not set");
+	    log.info(logPrefix + "Structure type's name is not set");
 	    return null;
 	}
 	prototype.setName(name);
 
 	String rotatorstr = node.getString("rotator", null);
 	if (rotatorstr == null) {
-	    log.warning(logPrefix+"Structure type's rotator is not set");
+	    log.warning(logPrefix + "Structure type's rotator is not set");
 	    rotatorstr = ":(";
 	}
 
 	Rotator rotator = Rotator.matchRotator(rotatorstr);
 	if (rotator == null) {
-	    log.warning(logPrefix+"Structure type's rotator is not valid, using default");
+	    log.warning(logPrefix + "Structure type's rotator is not valid, using default");
 	    rotator = Rotator.getDefault();
 	}
 	prototype.setRotator(rotator);
 
-	List<ConfigurationNode> structuretypenodes = node.getNodeList("structure", new ArrayList<ConfigurationNode>());
+	// List<ConfigurationNode> structuretypenodes = node.getNodeList("structure", new ArrayList<ConfigurationNode>());
+	//List<ConfigurationSection> structuretypenodes = getNodeList(node, "structure", new ArrayList<ConfigurationSection>());
+	
+	List<BkOldConfigurationNode> structuretypenodes = node.getNodeList("structure", new ArrayList<BkOldConfigurationNode>());
+	
+	//log.info("structuretypenodes" + structuretypenodes.size());
+
 	if (structuretypenodes.isEmpty()) {
-	    log.warning(logPrefix+"Structure type's structure is not set");
+	    log.warning(logPrefix + "Structure type's structure is not set");
 	    return null;
 	}
 
-	for (ConfigurationNode structureNode : structuretypenodes) {
+	// for (ConfigurationNode structureNode : structuretypenodes) {
+	for (BkOldConfigurationNode structureNode : structuretypenodes) {
 	    int x = structureNode.getInt("x", Integer.MIN_VALUE);
 	    int y = structureNode.getInt("y", Integer.MIN_VALUE);
 	    int z = structureNode.getInt("z", Integer.MIN_VALUE);
 	    if (x == Integer.MIN_VALUE || y == Integer.MIN_VALUE || z == Integer.MIN_VALUE) {
-		log.warning(logPrefix+"Structure's x, y, or z is not set");
+		log.warning(logPrefix + "Structure's x, y, or z is not set");
 	    }
 
 	    String materialstr = structureNode.getString("material", null);
 	    if (materialstr == null) {
-		log.warning(logPrefix+"Structure's material is not set");
+		log.warning(logPrefix + "Structure's material is not set");
 	    }
 
 	    Material material = Material.matchMaterial(materialstr);
 	    if (material == null) {
-		log.warning(logPrefix+"Structure's material is not recognized");
+		log.warning(logPrefix + "Structure's material is not recognized");
 	    }
 
 	    prototype.addBlock(x, y, z, material);
 	}
 
-	prototype.setMetadata((Map<String, String>) node.getProperty("metadata"));
+	// prototype.setMetadata((Map<String, String>) node.getProperty("metadata"));
+	// prototype.setMetadata((Map<String, String>) node.get("metadata"));
+	// List<Object> raw = (List<Object>) node.getList("metadata");
 
+	//log.info("@@@@" + node.getConfigurationSection("metadata").toString());
+	//log.info("#@@@" + node.get("metadata").toString());
+	//log.info("@@@@" + node.getConfigurationSection("metadata"));
+
+	//prototype.setMetadata((Map<String, String>) node.getConfigurationSection("metadata"));
+
+	prototype.setMetadata((Map<String, String>) node.getProperty("metadata"));
+	
 	if (prototype.getBlockCount() < 3) {
-	    log.warning(logPrefix+"For technical reasons, the structure's block count must be at least 3");
+	    log.warning(logPrefix + "For technical reasons, the structure's block count must be at least 3");
 	    return null;
 	}
 
@@ -308,16 +378,24 @@ public class StructureManager {
     public void loadStructures() {
 
 	File structuresFile = new File(this.plugin.getDataFolder(), this.structures_filename);
-	Configuration conf = new Configuration(structuresFile);
-	conf.load();
+	// Configuration conf = new Configuration(structuresFile);
+	// conf.load();
 
-	List<ConfigurationNode> nodelist = conf.getNodeList("structures", new ArrayList<ConfigurationNode>());
+	YamlConfiguration conf = YamlConfiguration.loadConfiguration(structuresFile);
 
-	for (ConfigurationNode node : nodelist) {
+	
+	// List<ConfigurationNode> nodelist = conf.getNodeList("structures", new ArrayList<ConfigurationNode>());
+	//List<ConfigurationSection> nodelist = getNodeList(conf, "structures", new ArrayList<ConfigurationSection>());
+	BkOldConfigurationNode OldNode = new BkOldConfigurationNode((Map<String, Object>) conf.getValues(true) );
+	List<BkOldConfigurationNode> nodelist = OldNode.getNodeList("structures", new ArrayList<BkOldConfigurationNode>());
+
+	
+	// for (ConfigurationNode node : nodelist) {
+	for (BkOldConfigurationNode node : nodelist) {
 	    Structure structure = this.yaml2Structure(node);
 
 	    if (structure == null) {
-		log.warning(logPrefix+"A structure couldn't be loaded");
+		log.warning(logPrefix + "A structure couldn't be loaded");
 	    } else {
 		for (StructureListener listener : listeners) {
 		    listener.structureLoaded(structure, node);
@@ -327,13 +405,14 @@ public class StructureManager {
 	    }
 	}
 
-	log.info(logPrefix+"Loaded " + this.structures.size() + " structure(s)");
+	log.info(logPrefix + "Loaded " + this.structures.size() + " structure(s)");
     }
 
-    public void saveStructures() {
+    public void saveStructures() throws IOException {
 
 	File structuresfile = new File(this.plugin.getDataFolder(), this.structures_filename);
-	Configuration conf = new Configuration(structuresfile);
+	// Configuration conf = new Configuration(structuresfile);
+	YamlConfiguration conf = YamlConfiguration.loadConfiguration(structuresfile);
 
 	List<Object> yamllist = new ArrayList<Object>();
 
@@ -347,10 +426,12 @@ public class StructureManager {
 	    yamllist.add(structure2yaml);
 	}
 
-	log.info(logPrefix+"Saved " + this.structures.size() + " structures");
+	log.info(logPrefix + "Saved " + this.structures.size() + " structures");
 
-	conf.setProperty("structures", yamllist);
-	conf.save();
+	// conf.setProperty("structures", yamllist);
+	conf.set("structures", yamllist);
+	// conf.save();
+	conf.save(structuresfile);
     }
 
     private Map<String, Object> structure2yaml(Structure structure) {
@@ -369,11 +450,12 @@ public class StructureManager {
 	return yamlmap;
     }
 
-    private Structure yaml2Structure(ConfigurationNode node) {
+    // private Structure yaml2Structure(ConfigurationNode node) {
+    private Structure yaml2Structure(BkOldConfigurationNode node) {
 	String name = node.getString("name", "structure");
 	String worldstr = node.getString("world", null);
 	if (worldstr == null) {
-	    log.warning(logPrefix+name+": world is not set");
+	    log.warning(logPrefix + name + ": world is not set");
 	    return null;
 	}
 
@@ -381,13 +463,13 @@ public class StructureManager {
 	int y = node.getInt("y", Integer.MIN_VALUE);
 	int z = node.getInt("z", Integer.MIN_VALUE);
 	if (x == Integer.MIN_VALUE || y == Integer.MIN_VALUE || z == Integer.MIN_VALUE) {
-	    log.warning(logPrefix+name+": x, y, or z is not set");
+	    log.warning(logPrefix + name + ": x, y, or z is not set");
 	    return null;
 	}
 
 	String structureTypeStr = node.getString("type", null);
 	if (structureTypeStr == null) {
-	    log.warning(logPrefix+name+": type is not set");
+	    log.warning(logPrefix + name + ": type is not set");
 	    return null;
 	}
 
@@ -399,20 +481,20 @@ public class StructureManager {
 
 	World world = this.plugin.getServer().getWorld(worldstr);
 	if (world == null) {
-	    log.warning(logPrefix+name+": world is not recognized");
+	    log.warning(logPrefix + name + ": world is not recognized");
 	    return null;
 	}
 
 	StructureType structureType = this.getStructureType(structureTypeStr);
 	if (structureType == null) {
-	    log.warning(logPrefix+name+": type of "+structureTypeStr+" is not recognized");
+	    log.warning(logPrefix + name + ": type of " + structureTypeStr + " is not recognized");
 	    return null;
 	}
 
 	Block block = world.getBlockAt(x, y, z);
 	Structure structure = new Structure(structureType, block, owner);
 	if (!structure.verifyStructure()) {
-	    log.warning(logPrefix+name+": structure was bad");
+	    log.warning(logPrefix + name + ": structure was bad");
 	    return null;
 	}
 
@@ -427,7 +509,7 @@ public class StructureManager {
 	listeners.remove(listener);
     }
 
-    public Structure checkForStone(Player player, Block behind) {
+    public Structure checkForStone(Player player, Block behind) throws IOException {
 	return blockListener.checkPlacedBlock(player, behind, null);
     }
 }

@@ -1,5 +1,7 @@
 package za.dats.bukkit.memorystone;
 
+import java.io.IOException;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -16,7 +18,7 @@ public class Interference {
 	return false;
     }
 
-    public void update(Player player, PlayerMoveEvent event) {
+    public void update(Player player, PlayerMoveEvent event) throws IOException {
 
 	// First check that we aren't spamming this - so check every 2 blocks worth of movement
 	// if lastposition isnt null and we havn't changed worlds and we have moved at least 2 blocks, 2^2 = 4

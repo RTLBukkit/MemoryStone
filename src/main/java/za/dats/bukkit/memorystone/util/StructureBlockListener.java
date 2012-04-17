@@ -1,16 +1,19 @@
 package za.dats.bukkit.memorystone.util;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockListener;
+//import org.bukkit.event.block.BlockListener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityListener;
+//import org.bukkit.event.entity.EntityListener;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -26,7 +29,8 @@ import za.dats.bukkit.memorystone.util.structure.StructureType;
  * @author cmdrdats
  * 
  */
-public class StructureBlockListener extends BlockListener {
+//public class StructureBlockListener extends BlockListener {
+	public class StructureBlockListener implements Listener {
 
     private final JavaPlugin plugin;
     private final StructureManager structureManager;
@@ -38,18 +42,22 @@ public class StructureBlockListener extends BlockListener {
 
     public void registerEvents() {
 	PluginManager pm = this.plugin.getServer().getPluginManager();
-	pm.registerEvent(Event.Type.BLOCK_PLACE, this, Event.Priority.Normal, this.plugin);
-	pm.registerEvent(Event.Type.BLOCK_BREAK, this, Event.Priority.High, this.plugin);
-	pm.registerEvent(Event.Type.ENTITY_EXPLODE, new EntityListener() {
-	    @Override
-	    public void onEntityExplode(EntityExplodeEvent event) {
-		StructureBlockListener.this.onEntityExplode(event);
-	    }
-	}, Event.Priority.High, plugin);
+	pm.registerEvents(this, this.plugin);
+	//pm.registerEvent(Event.Type.BLOCK_PLACE, this, Event.Priority.Normal, this.plugin);
+	//pm.registerEvent(Event.Type.BLOCK_BREAK, this, Event.Priority.High, this.plugin);
+	
+	// !!!! NEED Too Look At This
+//	pm.registerEvent(Event.Type.ENTITY_EXPLODE, new EntityListener() {
+//	    @Override
+//	    public void onEntityExplode(EntityExplodeEvent event) {
+//		StructureBlockListener.this.onEntityExplode(event);
+//	    }
+//	}, Event.Priority.High, plugin);
+	
     }
 
-    @Override
-    public void onBlockPlace(BlockPlaceEvent event) {
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) throws IOException {
 	if (event.isCancelled()) {
 	    return;
 	}
@@ -57,8 +65,8 @@ public class StructureBlockListener extends BlockListener {
 	Structure block = checkPlacedBlock(event.getPlayer(), event.getBlock(), event);
     }
 
-    @Override
-    public void onBlockBreak(BlockBreakEvent event) {
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) throws IOException {
 	if (event.isCancelled())
 	    return;
 
@@ -106,7 +114,7 @@ public class StructureBlockListener extends BlockListener {
 	}
     }
 
-    public Structure checkPlacedBlock(Player player, Block behind, BlockPlaceEvent event) {
+    public Structure checkPlacedBlock(Player player, Block behind, BlockPlaceEvent event) throws IOException {
 	String owner = player.getName();
 
 	Block placedblock = behind;

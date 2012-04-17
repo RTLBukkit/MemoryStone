@@ -1,5 +1,6 @@
 package za.dats.bukkit.memorystone;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,15 +15,18 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockListener;
+//import org.bukkit.event.block.BlockListener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.util.config.ConfigurationNode;
+//import org.bukkit.util.config.ConfigurationNode;
 import za.dats.bukkit.memorystone.MemoryStone.StoneType;
 import za.dats.bukkit.memorystone.economy.EconomyManager;
 import za.dats.bukkit.memorystone.util.StructureListener;
@@ -30,7 +34,8 @@ import za.dats.bukkit.memorystone.util.structure.Rotator;
 import za.dats.bukkit.memorystone.util.structure.Structure;
 import za.dats.bukkit.memorystone.util.structure.StructureType;
 
-public class MemoryStoneManager extends BlockListener implements StructureListener {
+//public class MemoryStoneManager extends BlockListener implements StructureListener {
+	public class MemoryStoneManager implements Listener, StructureListener {
     private final MemoryStonePlugin memoryStonePlugin;
     private HashMap<Structure, MemoryStone> structureMap = new HashMap<Structure, MemoryStone>();
     private HashMap<String, MemoryStone> namedMap = new HashMap<String, MemoryStone>();
@@ -45,8 +50,9 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
     public void registerEvents() {
 	PluginManager pm;
 	pm = memoryStonePlugin.getServer().getPluginManager();
-	pm.registerEvent(Event.Type.SIGN_CHANGE, this, Event.Priority.Normal, memoryStonePlugin);
-	pm.registerEvent(Event.Type.BLOCK_BREAK, this, Event.Priority.Normal, memoryStonePlugin);
+	//pm.registerEvent(Event.Type.SIGN_CHANGE, this, Event.Priority.Normal, memoryStonePlugin);
+	//pm.registerEvent(Event.Type.BLOCK_BREAK, this, Event.Priority.Normal, memoryStonePlugin);
+	pm.registerEvents(this, memoryStonePlugin);
     }
 
     public void structurePlaced(Player player, Structure structure) {
@@ -69,7 +75,12 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 	}
 
 	if (stone.getName() != null) {
-	    memoryStonePlugin.getCompassManager().forgetStone(stone.getName(), true);
+	    try {
+			memoryStonePlugin.getCompassManager().forgetStone(stone.getName(), true);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	    globalStones.remove(stone);
 	    removeWorldStone(stone);
 	    namedMap.remove(stone.getName());
@@ -95,7 +106,8 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 	player.sendMessage(Utility.color(Config.getColorLang("destroyed")));
     }
 
-    public void structureLoaded(Structure structure, ConfigurationNode node) {
+    //public void structureLoaded(Structure structure, ConfigurationNode node) {
+        public void structureLoaded(Structure structure, BkOldConfigurationNode node) {
 	MemoryStone stone = new MemoryStone();
 	stone.setStructure(structure);
 
@@ -115,6 +127,7 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 	    addWorldStone(stone);
 	}
 
+//	if (node.getProperty("teleportCost") != null) {
 	if (node.getProperty("teleportCost") != null) {
 	    try {
 		stone.setTeleportCost(Double.parseDouble(node.getString("teleportCost")));
@@ -122,6 +135,7 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 	    }
 	}
 
+		//if (node.getProperty("memorizeCost") != null) {
 	if (node.getProperty("memorizeCost") != null) {
 	    try {
 		stone.setMemorizeCost(Double.parseDouble(node.getString("memorizeCost")));
@@ -129,6 +143,7 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 	    }
 	}
 
+	//if (node.getProperty("signx") != null) {
 	if (node.getProperty("signx") != null) {
 	    try {
 		Sign newSign = (Sign) new Location(structure.getWorld(), node.getInt("signx", 0), node.getInt("signy",
@@ -146,7 +161,12 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 		stone.setSign(newSign);
 
 	    } catch (Exception e) {
-		memoryStonePlugin.getCompassManager().forgetStone(stone.getName(), false);
+		try {
+			memoryStonePlugin.getCompassManager().forgetStone(stone.getName(), false);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		stone.setName("");
 	    }
 	}
@@ -372,8 +392,8 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 	return namedMap.get(name);
     }
 
-    @Override
-    public void onBlockBreak(BlockBreakEvent event) {
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) throws IOException {
 	if (event.getBlock().getState() instanceof Sign) {
 	    final Sign state = (Sign) event.getBlock().getState();
 	    final MemoryStone stone = getMemoryStructureForSign(state);
@@ -427,8 +447,8 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 	return 0;
     }
 
-    @Override
-    public void onSignChange(final SignChangeEvent event) {
+    @EventHandler
+    public void onSignChange(final SignChangeEvent event) throws IOException {
 	if (event.isCancelled()) {
 	    return;
 	}
@@ -508,14 +528,19 @@ public class MemoryStoneManager extends BlockListener implements StructureListen
 		    Sign newSign = (Sign) new Location(state.getWorld(), state.getX(), state.getY(), state.getZ())
 			    .getBlock().getState();
 		    finalStone.setSign(newSign);
-		    memoryStonePlugin.getStructureManager().saveStructures();
+		    try {
+				memoryStonePlugin.getStructureManager().saveStructures();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
 		}
 	    }, 2);
 	    event.getPlayer().sendMessage(Utility.color(Config.getLang("signAdded")));
 	}
 
-	super.onSignChange(event);
+	//super.onSignChange(event);
     }
 
     public void updateSign(Sign s) {

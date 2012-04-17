@@ -1,16 +1,22 @@
 package za.dats.bukkit.memorystone;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.logging.Logger;
 
 import org.bukkit.Material;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
+//import org.bukkit.util.config.Configuration;
 
 public class Config {
-    private final static String configFile = "configuration.yml";
-    private static Configuration conf;
+    private static final Logger log = Logger.getLogger("Minecraft");
 
+    private final static String configFile = "configuration.yml";
+    //private static Configuration conf;
+    private static YamlConfiguration conf;
+    
     public enum MemoryEffect {
 	LIGHTNING_ON_CREATE("effects.lightningOnCreate"), LIGHTNING_ON_BREAK("effects.lightningOnBreak"), LIGHTNING_ON_TELEPORT_SOURCE(
 		"effects.lightningOnTeleportSource"), LIGHTNING_ON_TELEPORT_DEST(
@@ -24,17 +30,20 @@ public class Config {
 
     }
 
-    public static void init(JavaPlugin plugin) {
+    public static void init(JavaPlugin plugin) throws IOException {
 	File file = new File(plugin.getDataFolder(), configFile);
-	conf = new Configuration(file);
-	if (file.exists()) {
-	    conf.load();
-	}
-
+	//conf = new Configuration(file);
+//	if (file.exists()) {
+//	    //conf.load();
+//	    conf = YamlConfiguration.loadConfiguration(file);
+//	}
+	
+	conf = YamlConfiguration.loadConfiguration(file);
 	// Make sure we add new configuration options.
 	boolean changed = setDefaults();
 	if (!file.exists() || changed) {
-	    conf.save();
+	    //conf.save();
+		conf.save(file);
 	}
     }
 
@@ -113,10 +122,16 @@ public class Config {
 	defaults.put("lang.compassinterference", "Something strange is happening with your compass");
 	defaults.put("lang.compasslostinterference", "Your compass returns to normal");
 	boolean changed = false;
+	
 	for (String key : defaults.keySet()) {
-	    if (conf.getProperty(key) == null) {
+	    //if (conf.getProperty(key) == null) {
+	    //log.info("SetDefautl:" + key + "=" + defaults.get(key));
+	    //conf.addDefault(key, defaults.get(key));
+	    //conf.set(key, defaults.get(key));
+	    if (conf.get(key) == null) {
 		changed = true;
-		conf.setProperty(key, defaults.get(key));
+		//conf.setProperty(key, defaults.get(key));
+		conf.set(key, defaults.get(key));
 	    }
 	}
 
