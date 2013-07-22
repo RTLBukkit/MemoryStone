@@ -10,83 +10,82 @@ import za.dats.bukkit.memorystone.economy.EconomyManager;
 import za.dats.bukkit.memorystone.util.StructureManager;
 
 public class MemoryStonePlugin extends JavaPlugin {
-    private PluginDescriptionFile pdf;
-    private PluginManager pm;
-    private StructureManager structureManager = new StructureManager(this, "[MemoryStone] ");
-    private MemoryStoneManager memoryStoneManager = new MemoryStoneManager(this);
-    private CompassManager compassManager = new CompassManager(this);
-    //private SpoutLocationPopupManager spoutLocationPopupManager;
-    private EconomyManager economyManager = new EconomyManager();
-    private static MemoryStonePlugin instance;
+	private PluginDescriptionFile pdf;
+	private PluginManager pm;
+	private StructureManager structureManager = new StructureManager(this, "[MemoryStone] ");
+	private MemoryStoneManager memoryStoneManager = new MemoryStoneManager(this);
+	private CompassManager compassManager = new CompassManager(this);
+	// private SpoutLocationPopupManager spoutLocationPopupManager;
+	private EconomyManager economyManager = new EconomyManager();
+	private static MemoryStonePlugin instance;
 
-    public void onDisable() {
-    }
-
-    public void info(String log) {
-	getServer().getLogger().info("[MemoryStone] "+log);
-    }
-    
-    public void warn(String log) {
-	getServer().getLogger().warning("[MemoryStone] "+log);
-    }
-    
-    
-    public void onEnable() {
-	instance = this;
-	try {
-		Config.init(this);
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
+	public void onDisable() {
 	}
-	
-	pm = getServer().getPluginManager();
-	pdf = getDescription();
 
-	info(pdf.getName() + " version " + pdf.getVersion() + " is enabled!");
-	
-	economyManager.loadEconomy();
-	
-	structureManager.addStructureListener(memoryStoneManager);
-	structureManager.registerEvents();
-	
-	memoryStoneManager.registerEvents();
-	compassManager.registerEvents();
-	
-	if (isSpoutEnabled()) {
-	    //spoutLocationPopupManager = new SpoutLocationPopupManager(this);
-	    //spoutLocationPopupManager.registerEvents();
+	public void info(String log) {
+		getServer().getLogger().info("[MemoryStone] " + log);
 	}
-    }
 
-    public boolean isSpoutEnabled() {
-	if (pm.isPluginEnabled("Spout")) {
-	    return true;
+	public void warn(String log) {
+		getServer().getLogger().warning("[MemoryStone] " + log);
 	}
-	return false;
-    }
 
-    public StructureManager getStructureManager() {
-        return structureManager;
-    }
+	public void onEnable() {
+		instance = this;
+		try {
+			Config.init(this);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-    public MemoryStoneManager getMemoryStoneManager() {
-        return memoryStoneManager;
-    }
-    
-    public CompassManager getCompassManager() {
-	return compassManager;
-    }
+		pm = getServer().getPluginManager();
+		pdf = getDescription();
 
-//    public SpoutLocationPopupManager getSpoutLocationPopupManager() {
-//        return spoutLocationPopupManager;
-//    }
-    
-    public static MemoryStonePlugin getInstance() {
-	return instance;
-    }
-    
-    public EconomyManager getEconomyManager() {
-	return economyManager;
-    }
+		info(pdf.getName() + " version " + pdf.getVersion() + " is enabled!");
+
+		economyManager.loadEconomy();
+
+		structureManager.addStructureListener(memoryStoneManager);
+		structureManager.registerEvents();
+
+		memoryStoneManager.registerEvents();
+		compassManager.registerEvents();
+
+		if (isSpoutEnabled()) {
+			// spoutLocationPopupManager = new SpoutLocationPopupManager(this);
+			// spoutLocationPopupManager.registerEvents();
+		}
+	}
+
+	public boolean isSpoutEnabled() {
+		if (pm.isPluginEnabled("Spout")) {
+			return true;
+		}
+		return false;
+	}
+
+	public StructureManager getStructureManager() {
+		return structureManager;
+	}
+
+	public MemoryStoneManager getMemoryStoneManager() {
+		return memoryStoneManager;
+	}
+
+	public CompassManager getCompassManager() {
+		return compassManager;
+	}
+
+	// public SpoutLocationPopupManager getSpoutLocationPopupManager() {
+	// return spoutLocationPopupManager;
+	// }
+
+	public static MemoryStonePlugin getInstance() {
+		return instance;
+	}
+
+	public EconomyManager getEconomyManager() {
+		return economyManager;
+	}
 }
