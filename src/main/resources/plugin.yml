@@ -7,7 +7,7 @@ description: >
              Build Memory Stones out of Stone and Obsidian and a Sign to name it
              Tap a Memory Stone with your compass to memorize its location
              Right click with a compass to select a memorized stone to teleport to
-softdepend: [Spout, iConomy, BOSEconomy, MultiCurrency] 
+softdepend: [Vault] 
 permissions:
   memorystone.*:
     description: gives access to all normal MemoryStone permissions
