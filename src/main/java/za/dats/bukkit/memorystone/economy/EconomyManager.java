@@ -1,49 +1,43 @@
 package za.dats.bukkit.memorystone.economy;
 
 import java.util.Map;
+
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
+import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
+
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.RegisteredServiceProvider;
+
 import za.dats.bukkit.memorystone.Config;
 import za.dats.bukkit.memorystone.MemoryStone;
 import za.dats.bukkit.memorystone.MemoryStonePlugin;
-import za.dats.bukkit.memorystone.economy.payment.Method.MethodAccount;
-import za.dats.bukkit.memorystone.economy.payment.Methods;
 import za.dats.bukkit.memorystone.util.structure.StructureType;
 
 public class EconomyManager {
+	private Economy economy;
+
 	public void loadEconomy() {
-		loadPlugin();
-	}
-
-	public void unloadEconomy() {
-		Methods.reset();
-	}
-
-	private void loadPlugin() {
-		Methods.setVersion(MemoryStonePlugin.getInstance().getDescription().getVersion());
-
-		Methods.setMethod(MemoryStonePlugin.getInstance().getServer().getPluginManager());
-
-		if (Methods.getMethod() == null) {
-			MemoryStonePlugin.getInstance().warn("No Register Method Found. Economy Disabled");
-		} else {
-			MemoryStonePlugin.getInstance().info("Hooked into: " + Methods.getMethod().getName() + " " + Methods.getMethod().getVersion());
-		}
+		RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+        if (economyProvider != null) {
+            economy = economyProvider.getProvider();
+            MemoryStonePlugin.getInstance().info("Hooked into Vault successfully");
+        }else{
+        	MemoryStonePlugin.getInstance().warn("Vault not found. Economy disabled");
+        }
 	}
 
 	public boolean isEconomyEnabled() {
-		if (Config.isEconomyEnabled() && Methods.getMethod() != null) {
-			return true;
-		}
-
-		return false;
-	}
+        return Config.isEconomyEnabled() && economy != null;
+    }
 
 	public String getFormattedCost(double cost) {
-		return Methods.getMethod().format(cost);
+		return economy.format(cost);
 	}
 
 	public String getBuildCostString(StructureType structureType) {
-		return Methods.getMethod().format(getBuildCost(structureType));
+		return economy.format(getBuildCost(structureType));
 	}
 
 	private double getBuildCost(StructureType structureType) {
@@ -60,7 +54,24 @@ public class EconomyManager {
 	}
 
 	public boolean payTeleportCost(Player player, MemoryStone stone) {
-		MethodAccount account = Methods.getMethod().getAccount(player.getName());
+		/*
+		 * TODO: Add world config options
+		 * withdraw-from-world: stone, player
+		 * deposit-to-world: stone, player
+		 */
+		EconomyResponse status = economy.withdrawPlayer(player.getName(), player.getWorld().getName(), stone.getTeleportCost());
+		if (status.type == ResponseType.SUCCESS){
+			//Are stone owners paid?
+			if (Config.isEconomyOwnerPaid()){
+				economy.depositPlayer(stone.getStructure().getOwner(), stone.getStructure().getWorld().getName(), stone.getTeleportCost());
+			}
+			return true;
+		}else{
+			player.sendMessage(status.errorMessage);
+			return false;
+		}
+		/*
+		MethodAccount account = economy.getAccount(player.getName());
 		if (account == null) {
 			return false;
 		}
@@ -87,6 +98,7 @@ public class EconomyManager {
 		}
 
 		return false;
+		*/
 	}
 
 	public boolean payMemorizeCost(Player player, MemoryStone stone) {

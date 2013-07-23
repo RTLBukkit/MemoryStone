@@ -92,6 +92,10 @@
 			</snapshots>
 		</repository>
 		<repository>
+			<id>vault-repo</id>
+			<url>http://ci.herocraftonline.com/plugin/repository/everything</url>
+		</repository>
+		<repository>
         <id>Plugin Metrics</id>
 	        <url>http://repo.mcstats.org/content/repositories/public</url>
 	    </repository>
@@ -111,9 +115,7 @@
 		<dependency>
 			<groupId>net.milkbowl</groupId>
 			<artifactId>vault</artifactId>
-			<version>1.2.20</version>
-			<type>jar</type>
-			<scope>compile</scope>
+			<version>1.2.27</version>
 		</dependency>
 		<dependency>
 	        <groupId>org.mcstats.bukkit</groupId>
