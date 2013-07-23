@@ -5,6 +5,8 @@ import java.io.IOException;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mcstats.Metrics;
+
 import za.dats.bukkit.memorystone.economy.EconomyManager;
 //import za.dats.bukkit.memorystone.ui.SpoutLocationPopupManager;
 import za.dats.bukkit.memorystone.util.StructureManager;
@@ -37,6 +39,14 @@ public class MemoryStonePlugin extends JavaPlugin {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		
+		//Try loading metrics
+		try {
+		    Metrics metrics = new Metrics(this);
+		    metrics.start();
+		} catch (IOException e) {
+		    // Failed to submit the stats :-(
 		}
 
 		pm = getServer().getPluginManager();

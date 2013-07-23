@@ -8,17 +8,56 @@
 	<url>http://www.dats.co.za/memoryStone</url>
 	<build>
 		<finalName>${project.artifactId}</finalName>
+		
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>2.0.2</version>
 				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
+					<source>1.6</source>
+					<target>1.6</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<artifactSet>
+								<includes>
+									<include>org.mcstats.bukkit</include>
+								</includes>
+							</artifactSet>
+							<relocations>
+								<relocation>
+									<pattern>org.mcstats</pattern>
+									<shadedPattern>za.dats.bukkit.mcstats</shadedPattern>
+								</relocation>
+							</relocations>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
+		
+		<resources>
+	        <resource>
+	            <targetPath>.</targetPath>
+	            <filtering>true</filtering>
+	            <directory>${basedir}/src/main/resources/</directory>
+	            <includes>
+	                <include>*.yml</include>
+	            </includes>
+	        </resource>
+	    </resources>
+	    
 	</build>
 
 	<repositories>
@@ -52,6 +91,10 @@
 			<updatePolicy>always</updatePolicy>
 			</snapshots>
 		</repository>
+		<repository>
+        <id>Plugin Metrics</id>
+	        <url>http://repo.mcstats.org/content/repositories/public</url>
+	    </repository>
 	</repositories>
 
 	<!-- For the most part, I'm administering my own Artifactory where I'm manually 
@@ -72,5 +115,11 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+	        <groupId>org.mcstats.bukkit</groupId>
+	        <artifactId>metrics</artifactId>
+	        <version>R6</version>
+	        <scope>compile</scope>
+	    </dependency>
 	</dependencies>
 </project>
