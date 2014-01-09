@@ -55,97 +55,69 @@ public class EconomyManager {
 
 	public boolean payTeleportCost(Player player, MemoryStone stone) {
 		/*
-		 * TODO: Add world config options
-		 * withdraw-from-world: stone, player
-		 * deposit-to-world: stone, player
+		 * TODO: Add a pay-to world node
+		 * A pay-to node can be defined per structure in structuretypes.yml
+		 * Can be either PLAYER_WORLD or STONE_WORLD
+		 * Defaults to STONE_WORLD
 		 */
-		EconomyResponse status = economy.withdrawPlayer(player.getName(), player.getWorld().getName(), stone.getTeleportCost());
-		if (status.type == ResponseType.SUCCESS){
-			//Are stone owners paid?
+		
+		//Withdraw from the player
+		EconomyResponse wStatus = economy.withdrawPlayer(player.getName(), player.getWorld().getName(), stone.getTeleportCost());
+		if (wStatus.type == ResponseType.SUCCESS){
+			//Check if stone owners are paid, and attempt to pay them
 			if (Config.isEconomyOwnerPaid()){
-				economy.depositPlayer(stone.getStructure().getOwner(), stone.getStructure().getWorld().getName(), stone.getTeleportCost());
+				EconomyResponse dStatus = economy.depositPlayer(stone.getStructure().getOwner(), stone.getStructure().getWorld().getName(), stone.getTeleportCost());
+				//Deposit failed for some reason
+				if (dStatus.type != ResponseType.SUCCESS){
+					player.sendMessage(dStatus.errorMessage);
+					//Return the withdrawn amount to the player (shouldn't fail if the withdraw was successful)
+					economy.depositPlayer(player.getName(), player.getWorld().getName(), stone.getTeleportCost());
+					return false;
+				}
 			}
 			return true;
 		}else{
-			player.sendMessage(status.errorMessage);
+			player.sendMessage(wStatus.errorMessage);
 			return false;
 		}
-		/*
-		MethodAccount account = economy.getAccount(player.getName());
-		if (account == null) {
-			return false;
-		}
-
-		double cost = stone.getTeleportCost();
-		if (!account.hasEnough(cost)) {
-			return false;
-		}
-
-		if (account.subtract(cost)) {
-			if (Config.isEconomyOwnerPaid()) {
-				String owner = stone.getStructure().getOwner();
-				if (owner == null || stone.getStructure().getOwner().length() == 0) {
-					return true;
-				}
-
-				MethodAccount ownerAccount = Methods.getMethod().getAccount(owner);
-				if (ownerAccount != null) {
-					ownerAccount.add(cost);
-				}
-			}
-
-			return true;
-		}
-
-		return false;
-		*/
 	}
 
 	public boolean payMemorizeCost(Player player, MemoryStone stone) {
-		MethodAccount account = Methods.getMethod().getAccount(player.getName());
-		if (account == null) {
-			return false;
-		}
-
-		double cost = stone.getMemorizeCost();
-		if (!account.hasEnough(cost)) {
-			return false;
-		}
-
-		if (account.subtract(cost)) {
-			if (Config.isEconomyOwnerPaid()) {
-				String owner = stone.getStructure().getOwner();
-				if (owner == null || stone.getStructure().getOwner().length() == 0) {
-					return true;
-				}
-
-				MethodAccount ownerAccount = Methods.getMethod().getAccount(owner);
-				if (ownerAccount != null) {
-					ownerAccount.add(cost);
+		/*
+		 * TODO: Add a pay-to world node
+		 * A pay-to node can be defined per structure in structuretypes.yml
+		 * Can be either PLAYER_WORLD or STONE_WORLD
+		 * Defaults to STONE_WORLD
+		 */
+		
+		//Withdraw from the player
+		EconomyResponse wStatus = economy.withdrawPlayer(player.getName(), player.getWorld().getName(), stone.getMemorizeCost());
+		if (wStatus.type == ResponseType.SUCCESS){
+			//Check if stone owners are paid, and attempt to pay them
+			if (Config.isEconomyOwnerPaid()){
+				EconomyResponse dStatus = economy.depositPlayer(stone.getStructure().getOwner(), stone.getStructure().getWorld().getName(), stone.getMemorizeCost());
+				//Deposit failed for some reason
+				if (dStatus.type != ResponseType.SUCCESS){
+					player.sendMessage(dStatus.errorMessage);
+					//Return the withdrawn amount to the player (shouldn't fail if the withdraw was successful)
+					economy.depositPlayer(player.getName(), player.getWorld().getName(), stone.getMemorizeCost());
+					return false;
 				}
 			}
-
 			return true;
+		}else{
+			player.sendMessage(wStatus.errorMessage);
+			return false;
 		}
-
-		return false;
 	}
 
 	public boolean payBuildCost(Player player, StructureType stone) {
-		MethodAccount account = Methods.getMethod().getAccount(player.getName());
-		if (account == null) {
-			return false;
-		}
-
-		double cost = getBuildCost(stone);
-		if (!account.hasEnough(cost)) {
-			return false;
-		}
-
-		if (account.subtract(cost)) {
+		EconomyResponse wStatus = economy.withdrawPlayer(player.getName(), player.getWorld().getName(), getBuildCost(stone));
+		if (wStatus.type == ResponseType.SUCCESS){
 			return true;
+		}else{
+			player.sendMessage(wStatus.errorMessage);
+			return false;
 		}
-
-		return false;
 	}
 }

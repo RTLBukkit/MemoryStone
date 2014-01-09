@@ -75,7 +75,7 @@ public class Interference {
 				if (closestMemStone.getMemorizeCost() == 0 || player.hasPermission("memorystone.usefree")) {
 					// if stone is free memorize the stone and give the player a
 					// message
-					player.sendMessage(Config.getColorLang("insidememorizationdistance"));
+					player.sendMessage(Config.getColorLang("insidememorizationdistance", "name", closestMemStone.getName()));
 					MemoryStonePlugin.getInstance().getCompassManager().memorizeStone(player, closestMemStone);
 				}
 			}

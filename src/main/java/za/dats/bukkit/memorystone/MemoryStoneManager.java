@@ -490,6 +490,10 @@ public class MemoryStoneManager implements Listener, StructureListener {
 				return;
 			}
 
+			/*
+			 * TODO: Change base prices to defaults instead
+			 * Clamp negatives at 0
+			 */
 			String name = event.getLine(0);
 			String price = event.getLine(1);
 
