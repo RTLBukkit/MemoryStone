@@ -3,11 +3,12 @@ package za.dats.bukkit.memorystone.util;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import org.bukkit.Bukkit;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 //import org.bukkit.event.block.BlockListener;
@@ -23,6 +24,7 @@ import za.dats.bukkit.memorystone.MemoryStonePlugin;
 import za.dats.bukkit.memorystone.economy.EconomyManager;
 import za.dats.bukkit.memorystone.util.structure.Structure;
 import za.dats.bukkit.memorystone.util.structure.StructureType;
+import za.dats.bukkit.memorystone.util.structure.events.StructureBreakEvent;
 
 /**
  * @author tim (originally HTBlockListener)
@@ -43,70 +45,67 @@ public class StructureBlockListener implements Listener {
 	public void registerEvents() {
 		PluginManager pm = this.plugin.getServer().getPluginManager();
 		pm.registerEvents(this, this.plugin);
-		// pm.registerEvent(Event.Type.BLOCK_PLACE, this, Event.Priority.Normal,
-		// this.plugin);
-		// pm.registerEvent(Event.Type.BLOCK_BREAK, this, Event.Priority.High,
-		// this.plugin);
-
-		// !!!! NEED Too Look At This
-		// pm.registerEvent(Event.Type.ENTITY_EXPLODE, new EntityListener() {
-		// @Override
-		// public void onEntityExplode(EntityExplodeEvent event) {
-		// StructureBlockListener.this.onEntityExplode(event);
-		// }
-		// }, Event.Priority.High, plugin);
-
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR)
 	public void onBlockPlace(BlockPlaceEvent event) throws IOException {
-		if (event.isCancelled()) {
-			return;
-		}
-
-		Structure block = checkPlacedBlock(event.getPlayer(), event.getBlock(), event);
+            checkPlacedBlock(event.getPlayer(), event.getBlock(), event);
 	}
 
-	@EventHandler
-	public void onBlockBreak(BlockBreakEvent event) throws IOException {
-		if (event.isCancelled())
-			return;
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void onBlockBreaking(BlockBreakEvent event) throws IOException {
 
 		Block brokenblock = event.getBlock();
 		Set<Structure> totems = structureManager.getStructuresFromBlock(brokenblock);
 
 		if (totems == null)
 			return;
-
-		Player player = event.getPlayer();
-
-		// check permissions!
-		if (!player.hasPermission("memorystone.break")) {
-			event.setCancelled(true);
-			player.sendMessage(Config.getColorLang("nobreakpermission"));
-			return;
+                Boolean cancelled = false;
+                for (Structure structure : totems) {
+                    StructureBreakEvent e = new StructureBreakEvent(structure, event);
+                    Bukkit.getServer().getPluginManager().callEvent(e);
+                    if(e.isCancelled())
+                        cancelled = e.isCancelled();
 		}
-
-		// lightning strike!
-		if (Config.isEffectEnabled(MemoryEffect.LIGHTNING_ON_BREAK)) {
-			brokenblock.getWorld().strikeLightningEffect(brokenblock.getLocation());
-		}
-
-		for (Structure structure : totems) {
-			// TODO add REPLACE code?
-			structureManager.removeStructure(event, structure);
-			structureManager.saveStructures();
-		}
-
-		// if (!this.plugin.getConfigManager().isQuiet()) {
-		// }
+                //If any structure breaks were cancelled, cancel the block break
+                if (cancelled) {
+                    event.setCancelled(cancelled);
+                    return;
+                }
+        }
+      
+        @EventHandler(priority = EventPriority.MONITOR)
+        public void onBlockBroken(BlockBreakEvent event) throws IOException {
+            Block brokenblock = event.getBlock();
+            blockBroke(brokenblock,event.getPlayer());
+            
 	}
-
-	protected void onEntityExplode(EntityExplodeEvent event) {
-		if (event.isCancelled()) {
-			return;
+        
+        public void blockBroke(Block brokenblock, Player breaker) throws IOException{
+                   
+            Set<Structure> totems = structureManager.getStructuresFromBlock(brokenblock);
+            
+            for(Structure structure : totems) {
+                    structureManager.removeStructure(breaker, structure);
+                    structureManager.saveStructures();
+                }
+        }
+        
+	@EventHandler(priority = EventPriority.HIGH)
+	protected void onEntityExploding(EntityExplodeEvent event) {
+            //Current behavior is to protect all blocks in structure from explosions.
+		for (Block brokenBlock : event.blockList()) {
+			Set<Structure> totems = structureManager.getStructuresFromBlock(brokenBlock);
+			if (totems != null) {
+				event.setCancelled(true);
+				return;
+			}
 		}
-
+	}
+        
+        @EventHandler(priority = EventPriority.MONITOR)
+	protected void onEntityExploded(EntityExplodeEvent event) {
+            //Current behavior is to protect all blocks in structure from explosions.
 		for (Block brokenBlock : event.blockList()) {
 			Set<Structure> totems = structureManager.getStructuresFromBlock(brokenBlock);
 			if (totems != null) {
@@ -148,18 +147,6 @@ public class StructureBlockListener implements Listener {
 					return null;
 				}
 			}
-
-			// check the number of totems
-			/*
-			 * Set<Structure> totemset =
-			 * structureManager.getStructuresFromPlayer(player); if (totemset !=
-			 * null && totemset.size() >=
-			 * this.plugin.getConfigManager().getStructuresPerPlayer() &&
-			 * !player.hasPermission("healingtotem.unlimitedbuild")) {
-			 * event.setCancelled(true); player.sendMessage(ChatColor.RED +
-			 * "You have reached the maximum number of totems you can build.");
-			 * return; }
-			 */
 
 			for (Block block : structure.getBlocks()) {
 				if (structureManager.getStructuresFromBlock(block) != null) {

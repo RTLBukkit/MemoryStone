@@ -116,7 +116,7 @@ public class StructureManager {
 		}
 	}
 
-	public void removeStructure(BlockBreakEvent event, Structure structure) {
+	public void removeStructure(Player player, Structure structure) {
 		this.structures.remove(structure);
 
 		// remove from block hash
@@ -138,7 +138,7 @@ public class StructureManager {
 		}
 
 		for (StructureListener listener : listeners) {
-			listener.structureDestroyed(event.getPlayer(), structure);
+			listener.structureDestroyed(player, structure);
 		}
 
 	}
